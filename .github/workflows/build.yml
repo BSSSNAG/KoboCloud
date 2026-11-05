@@ -1,0 +1,24 @@
+name: Build KoboRoot
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set executable permissions and build KoboRoot.tgz
+        run: |
+          chmod +x src/usr/local/kobocloud/*.sh
+          chmod +x src/usr/local/kobocloud/www/cgi-bin/select.cgi
+          sh ./makeKoboRoot.sh
+
+      - name: Upload KoboRoot.tgz Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KoboRoot-Package
+          path: KoboRoot.tgz
