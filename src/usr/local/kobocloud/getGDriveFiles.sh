@@ -1,14 +1,12 @@
 #!/bin/sh
 
 baseURL="$1"
-outDir="$2"
 
 #load config
 . $(dirname $0)/config.sh
 
 find_files() #function to find all files in the folder 
 {
-
 $CURL -k -L --silent "https://drive.google.com/drive/folders/$1" |
 grep -Eo "\\\x5b\\\x22[^\\\]*\\\x22,\\\x5b\\\x22$1\\\x22\\\x5d,\\\x22.{1,250}\\\x22,\\\x22[^\\\]*\\\/[^\\\]*" |
 sed 's/\\\x/\\\\\x/g' |
@@ -26,31 +24,20 @@ do
 done
 }
 
-# get directory listing
-echo "Getting $baseURL"
-# get directory listing
-
+# Extract the folder code from the shared URL
 gDirCode=`echo $baseURL | sed 's@.*/\([^/\?]*\).*@\1@'`
-
-echo $gDirCode
 
 links=`find_files "$gDirCode"` # find links
 echo "$links" |
 sed 's/\\\x/\\\\\x/g' |
 while read fileInfo
 do
-    echo "File info: $fileInfo"
-    fileCode=`echo $fileInfo | sed -n 's/.*|\(.*\)/\1/p'` # extract the code for file download (this is how a file is identified in GDrive)
+    [ -z "$fileInfo" ] && continue
+    fileCode=`echo $fileInfo | sed -n 's/.*|\(.*\)/\1/p'` # extract the code for file download
     fileName=`echo $fileInfo | sed -n 's/\(.*\)|.*/\1/p'` # extract the file name
-    echo "File code: $fileCode"
-    echo "File name: $fileName"
-    linkLine="https://drive.google.com/uc?id=$fileCode&export=download"
     outFileName=`/bin/echo -e "$fileName" | tr ' ' '_' `
-    localFile="$outDir/$outFileName"
 
-    $KC_HOME/getRemoteFile.sh "$linkLine" "$localFile"
-    if [ $? -ne 0 ] ; then
-        echo "Having problems contacting Google Drive. Try again in a couple of minutes."
-        exit
+    if [ -n "$fileCode" ] && [ -n "$outFileName" ]; then
+        echo "$fileCode|$outFileName"
     fi
 done
